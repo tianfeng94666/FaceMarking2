@@ -1,4 +1,4 @@
-package m.tri.facedetectcamera.model;
+package com.tianfeng.swzn.facemarking.bean;
 
 import android.graphics.PointF;
 
@@ -6,7 +6,7 @@ import android.graphics.PointF;
  * Created by Nguyen on 5/20/2016.
  */
 
-public class FaceResult extends Object {
+public class FaceBean extends Object {
 
     private PointF midEye;
     private float eyeDist;
@@ -14,8 +14,12 @@ public class FaceResult extends Object {
     private float pose;
     private int id;
     private long time;
+    private double beauty;
+    private int age;
 
-    public FaceResult() {
+
+
+    public FaceBean() {
         id = 0;
         midEye = new PointF(0.0f, 0.0f);
         eyeDist = 0.0f;
@@ -92,5 +96,20 @@ public class FaceResult extends Object {
 
     public void setTime(long time) {
         this.time = time;
+    }
+    public double getBeauty() {
+        return beauty;
+    }
+
+    public void setBeauty(double beauty) {
+        this.beauty = beauty;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
     }
 }

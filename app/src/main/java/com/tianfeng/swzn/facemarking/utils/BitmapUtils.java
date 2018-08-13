@@ -453,10 +453,6 @@ public class BitmapUtils {
                 out.flush();
                 out.close();
             }
-//            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-//            Uri uri = Uri.fromFile(file);
-//            intent.setData(uri);
-//            context.sendBroadcast(intent);
             updateResources(context, file.getPath());
         } catch (FileNotFoundException e) {
             e.printStackTrace();

@@ -35,7 +35,7 @@ public class ApiFace {
         return SingletonHolder.instance;
     }
 
-    public void getResult(final String url) {
+    public void getResult(final byte[] data) {
 
         new Thread(new Runnable() {
             @Override
@@ -46,17 +46,12 @@ public class ApiFace {
                 // 可选：设置网络连接参数
                 client.setConnectionTimeoutInMillis(2000);
                 client.setSocketTimeoutInMillis(60000);
-
-                // 可选：设置代理服务器地址, http和socket二选一，或者均不设置
-//        client.setHttpProxy("proxy_host", proxy_port);  // 设置http代理
-//        client.setSocketProxy("proxy_host", proxy_port);  // 设置socket代理
-
                 // 可选：设置log4j日志输出格式，若不设置，则使用默认配置
                 // 也可以直接通过jvm启动参数设置此环境变量
                 System.setProperty("aip.log4j.conf", "path/to/your/log4j.properties");
 
                 // 调用接口
-                String image = imageToBase64(url);
+                String image = Base64.encodeToString(data, Base64.DEFAULT);
                 String imageType = "BASE64";
                 String result = null;
                 // 传入可选参数调用接口
@@ -68,7 +63,7 @@ public class ApiFace {
                 try {
 
                     result = res.toString(2);
-                    EventBus.getDefault().post(new MessageBean(Global.FACE_RESULT, result));
+                    EventBus.getDefault().post(new MessageBean(Global.FACE_RESULT, result,data));
                     Log.e("tag", result);
                 } catch (JSONException e) {
                     e.printStackTrace();

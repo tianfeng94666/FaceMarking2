@@ -1,7 +1,7 @@
 // Copyright (c) Philipp Wagner. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-package m.tri.facedetectcamera.activity.ui;
+package com.tianfeng.swzn.facemarking.viewUtils;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -13,9 +13,10 @@ import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.View;
 
+import com.tianfeng.swzn.facemarking.bean.FaceBean;
+
 import java.text.DecimalFormat;
 
-import m.tri.facedetectcamera.model.FaceResult;
 
 /**
  * Created by Nguyen on 5/20/2016.
@@ -32,7 +33,7 @@ public class FaceOverlayView extends View {
     private int mOrientation;
     private int previewWidth;
     private int previewHeight;
-    private FaceResult[] mFaces;
+    private FaceBean[] mFaces;
     private double fps;
     private boolean isFront = false;
 
@@ -66,7 +67,7 @@ public class FaceOverlayView extends View {
         this.fps = fps;
     }
 
-    public void setFaces(FaceResult[] faces) {
+    public void setFaces(FaceBean[] faces) {
         mFaces = faces;
         invalidate();
     }
@@ -99,7 +100,7 @@ public class FaceOverlayView extends View {
             canvas.save();
             canvas.rotate(-mOrientation);
             RectF rectF = new RectF();
-            for (FaceResult face : mFaces) {
+            for (FaceBean face : mFaces) {
                 PointF mid = new PointF();
                 face.getMidPoint(mid);
 
@@ -119,8 +120,8 @@ public class FaceOverlayView extends View {
                     }
                     canvas.drawRect(rectF, mPaint);
                     canvas.drawText("ID " + face.getId(), rectF.left, rectF.bottom + mTextPaint.getTextSize(), mTextPaint);
-                    canvas.drawText("Confidence " + face.getConfidence(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 2, mTextPaint);
-                    canvas.drawText("EyesDistance " + face.eyesDistance(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 3, mTextPaint);
+                    canvas.drawText("年龄 " + face.getAge(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 2, mTextPaint);
+                    canvas.drawText("颜值 " + face.getBeauty(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 3, mTextPaint);
                 }
             }
             canvas.restore();

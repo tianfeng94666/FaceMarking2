@@ -23,6 +23,7 @@ import android.support.v7.app.AlertDialog;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,11 +40,13 @@ import com.tianfeng.swzn.facemarking.fragment.ConfirmationDialogFragment;
 import com.tianfeng.swzn.facemarking.jsonBean.FaceResult;
 import com.tianfeng.swzn.facemarking.utils.BitmapUtils;
 import com.tianfeng.swzn.facemarking.utils.CameraUtil;
+import com.tianfeng.swzn.facemarking.viewUtils.FaceOverlayView;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -67,6 +70,7 @@ public class MainActivity extends BaseActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private Handler mBackgroundHandler;
     long lastModirTime;
+    private FaceOverlayView mFaceView;
 
     /**
      * 接收百度那边人脸检测的结果
@@ -91,6 +95,9 @@ public class MainActivity extends BaseActivity {
      * 初始化界面
      */
     private void initView() {
+        apiFace = ApiFace.getInstance();
+        mFaceView = new FaceOverlayView(this);
+        addContentView(mFaceView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         if (cameraView != null) {
             cameraView.addCallback(mCallback);
         }
@@ -160,9 +167,6 @@ public class MainActivity extends BaseActivity {
         ButterKnife.bind(this);
         EventBus.getDefault().register(this);
         initView();
-        apiFace = ApiFace.getInstance();
-
-
     }
 
     @Override
@@ -231,17 +235,19 @@ public class MainActivity extends BaseActivity {
                 Camera.Parameters parameters = mCamera.getParameters();
                 int width = parameters.getPreviewSize().width;
                 int height = parameters.getPreviewSize().height;
-
+                bitmap = Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
                 YuvImage yuv = new YuvImage(mData, parameters.getPreviewFormat(), width, height, null);
                 mData = null;
-                yuv.compressToJpeg(new Rect(0, 0, width, height), 100, mBitmapOutput);
+                if(!yuv.compressToJpeg(new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()), 100, mBitmapOutput)){
+                    Log.e("CreateBitmap", "compressToJpeg failed");
+                }
 
                 byte[] bytes = mBitmapOutput.toByteArray();
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inPreferredConfig = Bitmap.Config.RGB_565;//必须设置为565，否则无法检测
-                bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
-
-                mBitmapOutput.reset();
+                bitmap = BitmapFactory.decodeStream(
+                        new ByteArrayInputStream(bytes),null,options);
+                        mBitmapOutput.reset();
                 roteBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), mMatrix, false);
                 List<Rect> rects = FaceSDK.detectionBitmap(bitmap, getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels);
 
@@ -260,7 +266,7 @@ public class MainActivity extends BaseActivity {
                         BitmapUtils.saveJPGE_After(MainActivity.this, roteBitmap, img_path, 100);
 
                         Log.e("path", img_path);
-                        apiFace.getResult(img_path);
+//                        apiFace.getResult(img_path);
                     }
                 }
 
