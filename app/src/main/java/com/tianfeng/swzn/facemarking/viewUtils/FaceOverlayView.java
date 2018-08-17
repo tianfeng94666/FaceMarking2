@@ -118,17 +118,17 @@ public class FaceOverlayView extends View {
                         rectF.left = getWidth() - right;
                         rectF.right = getWidth() - left;
                     }
-                    canvas.drawRect(rectF, mPaint);
-                    canvas.drawText("ID " + face.getId(), rectF.left, rectF.bottom + mTextPaint.getTextSize(), mTextPaint);
-                    canvas.drawText("年龄 " + face.getAge(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 2, mTextPaint);
-                    canvas.drawText("颜值 " + face.getBeauty(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 3, mTextPaint);
+//                    canvas.drawRect(rectF, mPaint);
+//                    canvas.drawText("ID " + face.getId(), rectF.left, rectF.bottom + mTextPaint.getTextSize(), mTextPaint);
+//                    canvas.drawText("年龄 " + face.getAge(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 2, mTextPaint);
+//                    canvas.drawText("颜值 " + face.getBeauty(), rectF.left, rectF.bottom + mTextPaint.getTextSize() * 3, mTextPaint);
                 }
             }
             canvas.restore();
         }
 
         DecimalFormat df2 = new DecimalFormat(".##");
-        canvas.drawText("Detected_Frame/s: " + df2.format(fps) + " @ " + previewWidth + "x" + previewHeight, mTextPaint.getTextSize(), mTextPaint.getTextSize(), mTextPaint);
+//        canvas.drawText("Detected_Frame/s: " + df2.format(fps) + " @ " + previewWidth + "x" + previewHeight, mTextPaint.getTextSize(), mTextPaint.getTextSize(), mTextPaint);
     }
 
     public void setPreviewWidth(int previewWidth) {

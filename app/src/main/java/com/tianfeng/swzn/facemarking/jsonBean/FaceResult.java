@@ -5,20 +5,28 @@ import java.util.List;
 public class FaceResult {
 
     /**
+     * cached : 0
      * error_code : 0
      * error_msg : SUCCESS
-     * log_id : 7500115651575
-     * timestamp : 1533623113
-     * cached : 0
-     * result : {"face_num":1,"face_list":[{"face_token":"ca3353d0289be43d2581659ac1e471da","location":{"left":1005.706421,"top":1159.122803,"width":631,"height":909,"rotation":175},"face_probability":0.9414222836,"angle":{"yaw":-1.992956161,"pitch":3.723800421,"roll":175.885025},"age":23,"beauty":23.88898277}]}
+     * log_id : 9900120184840
+     * result : {"face_list":[{"age":24,"angle":{"pitch":-16.17018127,"roll":-13.28870869,"yaw":4.665333748},"beauty":33.1857338,"face_probability":0.9353134632,"face_token":"98972dbcbd3f9a1b6516e30c750216ea","face_type":{"probability":0.9998556376,"type":"human"},"gender":{"probability":0.9941805601,"type":"male"},"glasses":{"probability":0.9991256595,"type":"common"},"location":{"height":239,"left":169.3163147,"rotation":-14,"top":504.0287781,"width":208},"race":{"probability":0.9980068803,"type":"yellow"}}],"face_num":1}
+     * timestamp : 1534472213
      */
 
+    private int cached;
     private int error_code;
     private String error_msg;
     private long log_id;
-    private int timestamp;
-    private int cached;
     private ResultBean result;
+    private int timestamp;
+
+    public int getCached() {
+        return cached;
+    }
+
+    public void setCached(int cached) {
+        this.cached = cached;
+    }
 
     public int getError_code() {
         return error_code;
@@ -44,22 +52,6 @@ public class FaceResult {
         this.log_id = log_id;
     }
 
-    public int getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(int timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public int getCached() {
-        return cached;
-    }
-
-    public void setCached(int cached) {
-        this.cached = cached;
-    }
-
     public ResultBean getResult() {
         return result;
     }
@@ -68,10 +60,18 @@ public class FaceResult {
         this.result = result;
     }
 
+    public int getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(int timestamp) {
+        this.timestamp = timestamp;
+    }
+
     public static class ResultBean {
         /**
+         * face_list : [{"age":24,"angle":{"pitch":-16.17018127,"roll":-13.28870869,"yaw":4.665333748},"beauty":33.1857338,"face_probability":0.9353134632,"face_token":"98972dbcbd3f9a1b6516e30c750216ea","face_type":{"probability":0.9998556376,"type":"human"},"gender":{"probability":0.9941805601,"type":"male"},"glasses":{"probability":0.9991256595,"type":"common"},"location":{"height":239,"left":169.3163147,"rotation":-14,"top":504.0287781,"width":208},"race":{"probability":0.9980068803,"type":"yellow"}}]
          * face_num : 1
-         * face_list : [{"face_token":"ca3353d0289be43d2581659ac1e471da","location":{"left":1005.706421,"top":1159.122803,"width":631,"height":909,"rotation":175},"face_probability":0.9414222836,"angle":{"yaw":-1.992956161,"pitch":3.723800421,"roll":175.885025},"age":23,"beauty":23.88898277}]
          */
 
         private int face_num;
@@ -95,43 +95,35 @@ public class FaceResult {
 
         public static class FaceListBean {
             /**
-             * face_token : ca3353d0289be43d2581659ac1e471da
-             * location : {"left":1005.706421,"top":1159.122803,"width":631,"height":909,"rotation":175}
-             * face_probability : 0.9414222836
-             * angle : {"yaw":-1.992956161,"pitch":3.723800421,"roll":175.885025}
-             * age : 23
-             * beauty : 23.88898277
+             * age : 24
+             * angle : {"pitch":-16.17018127,"roll":-13.28870869,"yaw":4.665333748}
+             * beauty : 33.1857338
+             * face_probability : 0.9353134632
+             * face_token : 98972dbcbd3f9a1b6516e30c750216ea
+             * face_type : {"probability":0.9998556376,"type":"human"}
+             * gender : {"probability":0.9941805601,"type":"male"}
+             * glasses : {"probability":0.9991256595,"type":"common"}
+             * location : {"height":239,"left":169.3163147,"rotation":-14,"top":504.0287781,"width":208}
+             * race : {"probability":0.9980068803,"type":"yellow"}
              */
 
-            private String face_token;
-            private LocationBean location;
-            private double face_probability;
-            private AngleBean angle;
             private int age;
+            private AngleBean angle;
             private double beauty;
+            private double face_probability;
+            private String face_token;
+            private FaceTypeBean face_type;
+            private GenderBean gender;
+            private GlassesBean glasses;
+            private LocationBean location;
+            private RaceBean race;
 
-            public String getFace_token() {
-                return face_token;
+            public int getAge() {
+                return age;
             }
 
-            public void setFace_token(String face_token) {
-                this.face_token = face_token;
-            }
-
-            public LocationBean getLocation() {
-                return location;
-            }
-
-            public void setLocation(LocationBean location) {
-                this.location = location;
-            }
-
-            public double getFace_probability() {
-                return face_probability;
-            }
-
-            public void setFace_probability(double face_probability) {
-                this.face_probability = face_probability;
+            public void setAge(int age) {
+                this.age = age;
             }
 
             public AngleBean getAngle() {
@@ -142,14 +134,6 @@ public class FaceResult {
                 this.angle = angle;
             }
 
-            public int getAge() {
-                return age;
-            }
-
-            public void setAge(int age) {
-                this.age = age;
-            }
-
             public double getBeauty() {
                 return beauty;
             }
@@ -158,20 +142,198 @@ public class FaceResult {
                 this.beauty = beauty;
             }
 
-            public static class LocationBean {
+            public double getFace_probability() {
+                return face_probability;
+            }
+
+            public void setFace_probability(double face_probability) {
+                this.face_probability = face_probability;
+            }
+
+            public String getFace_token() {
+                return face_token;
+            }
+
+            public void setFace_token(String face_token) {
+                this.face_token = face_token;
+            }
+
+            public FaceTypeBean getFace_type() {
+                return face_type;
+            }
+
+            public void setFace_type(FaceTypeBean face_type) {
+                this.face_type = face_type;
+            }
+
+            public GenderBean getGender() {
+                return gender;
+            }
+
+            public void setGender(GenderBean gender) {
+                this.gender = gender;
+            }
+
+            public GlassesBean getGlasses() {
+                return glasses;
+            }
+
+            public void setGlasses(GlassesBean glasses) {
+                this.glasses = glasses;
+            }
+
+            public LocationBean getLocation() {
+                return location;
+            }
+
+            public void setLocation(LocationBean location) {
+                this.location = location;
+            }
+
+            public RaceBean getRace() {
+                return race;
+            }
+
+            public void setRace(RaceBean race) {
+                this.race = race;
+            }
+
+            public static class AngleBean {
                 /**
-                 * left : 1005.706421
-                 * top : 1159.122803
-                 * width : 631
-                 * height : 909
-                 * rotation : 175
+                 * pitch : -16.17018127
+                 * roll : -13.28870869
+                 * yaw : 4.665333748
                  */
 
+                private double pitch;
+                private double roll;
+                private double yaw;
+
+                public double getPitch() {
+                    return pitch;
+                }
+
+                public void setPitch(double pitch) {
+                    this.pitch = pitch;
+                }
+
+                public double getRoll() {
+                    return roll;
+                }
+
+                public void setRoll(double roll) {
+                    this.roll = roll;
+                }
+
+                public double getYaw() {
+                    return yaw;
+                }
+
+                public void setYaw(double yaw) {
+                    this.yaw = yaw;
+                }
+            }
+
+            public static class FaceTypeBean {
+                /**
+                 * probability : 0.9998556376
+                 * type : human
+                 */
+
+                private double probability;
+                private String type;
+
+                public double getProbability() {
+                    return probability;
+                }
+
+                public void setProbability(double probability) {
+                    this.probability = probability;
+                }
+
+                public String getType() {
+                    return type;
+                }
+
+                public void setType(String type) {
+                    this.type = type;
+                }
+            }
+
+            public static class GenderBean {
+                /**
+                 * probability : 0.9941805601
+                 * type : male
+                 */
+
+                private double probability;
+                private String type;
+
+                public double getProbability() {
+                    return probability;
+                }
+
+                public void setProbability(double probability) {
+                    this.probability = probability;
+                }
+
+                public String getType() {
+                    return type;
+                }
+
+                public void setType(String type) {
+                    this.type = type;
+                }
+            }
+
+            public static class GlassesBean {
+                /**
+                 * probability : 0.9991256595
+                 * type : common
+                 */
+
+                private double probability;
+                private String type;
+
+                public double getProbability() {
+                    return probability;
+                }
+
+                public void setProbability(double probability) {
+                    this.probability = probability;
+                }
+
+                public String getType() {
+                    return type;
+                }
+
+                public void setType(String type) {
+                    this.type = type;
+                }
+            }
+
+            public static class LocationBean {
+                /**
+                 * height : 239
+                 * left : 169.3163147
+                 * rotation : -14
+                 * top : 504.0287781
+                 * width : 208
+                 */
+
+                private int height;
                 private double left;
+                private int rotation;
                 private double top;
                 private int width;
-                private int height;
-                private int rotation;
+
+                public int getHeight() {
+                    return height;
+                }
+
+                public void setHeight(int height) {
+                    this.height = height;
+                }
 
                 public double getLeft() {
                     return left;
@@ -179,6 +341,14 @@ public class FaceResult {
 
                 public void setLeft(double left) {
                     this.left = left;
+                }
+
+                public int getRotation() {
+                    return rotation;
+                }
+
+                public void setRotation(int rotation) {
+                    this.rotation = rotation;
                 }
 
                 public double getTop() {
@@ -196,57 +366,31 @@ public class FaceResult {
                 public void setWidth(int width) {
                     this.width = width;
                 }
-
-                public int getHeight() {
-                    return height;
-                }
-
-                public void setHeight(int height) {
-                    this.height = height;
-                }
-
-                public int getRotation() {
-                    return rotation;
-                }
-
-                public void setRotation(int rotation) {
-                    this.rotation = rotation;
-                }
             }
 
-            public static class AngleBean {
+            public static class RaceBean {
                 /**
-                 * yaw : -1.992956161
-                 * pitch : 3.723800421
-                 * roll : 175.885025
+                 * probability : 0.9980068803
+                 * type : yellow
                  */
 
-                private double yaw;
-                private double pitch;
-                private double roll;
+                private double probability;
+                private String type;
 
-                public double getYaw() {
-                    return yaw;
+                public double getProbability() {
+                    return probability;
                 }
 
-                public void setYaw(double yaw) {
-                    this.yaw = yaw;
+                public void setProbability(double probability) {
+                    this.probability = probability;
                 }
 
-                public double getPitch() {
-                    return pitch;
+                public String getType() {
+                    return type;
                 }
 
-                public void setPitch(double pitch) {
-                    this.pitch = pitch;
-                }
-
-                public double getRoll() {
-                    return roll;
-                }
-
-                public void setRoll(double roll) {
-                    this.roll = roll;
+                public void setType(String type) {
+                    this.type = type;
                 }
             }
         }

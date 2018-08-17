@@ -56,7 +56,7 @@ public class ApiFace {
                 String result = null;
                 // 传入可选参数调用接口
                 HashMap<String, String> options = new HashMap<String, String>();
-                options.put("face_field", "age,beauty");
+                options.put("face_field", "age,beauty,gender,race,glasses,face_type");
                 options.put("max_face_num", "2");
                 options.put("face_type", "LIVE");
                 JSONObject res = client.detect(image, imageType, options);

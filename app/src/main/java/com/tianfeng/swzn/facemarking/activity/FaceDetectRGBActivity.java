@@ -1,7 +1,7 @@
 package com.tianfeng.swzn.facemarking.activity;
 
 import android.Manifest;
-import android.app.AlertDialog;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -13,22 +13,30 @@ import android.graphics.RectF;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.media.FaceDetector;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -36,9 +44,9 @@ import com.google.gson.JsonObject;
 import com.tianfeng.swzn.facemarking.R;
 import com.tianfeng.swzn.facemarking.apiFace.ApiFace;
 import com.tianfeng.swzn.facemarking.base.BaseActivity;
+import com.tianfeng.swzn.facemarking.base.Constants;
 import com.tianfeng.swzn.facemarking.bean.FaceBean;
 import com.tianfeng.swzn.facemarking.bean.MessageBean;
-import com.tianfeng.swzn.facemarking.fragment.ConfirmationDialogFragment;
 import com.tianfeng.swzn.facemarking.jsonBean.FaceResult;
 import com.tianfeng.swzn.facemarking.utils.BitmapUtils;
 import com.tianfeng.swzn.facemarking.utils.CameraErrorCallback;
@@ -76,17 +84,33 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
 
     @BindView(R.id.surfaceview)
     SurfaceView surfaceview;
-    @BindView(R.id.iv_picture)
-    ImageView ivPicture;
     @BindView(R.id.topLayout)
     RelativeLayout topLayout;
+    @BindView(R.id.iv_top)
+    ImageView ivTop;
+    @BindView(R.id.iv_left)
+    ImageView ivLeft;
+    @BindView(R.id.iv_right)
+    ImageView ivRight;
+    @BindView(R.id.iv_wai)
+    ImageView ivWai;
+    @BindView(R.id.iv_nei)
+    ImageView ivNei;
+    @BindView(R.id.iv_decorate_top)
+    ImageView ivDecorateTop;
+    @BindView(R.id.tv_mark)
+    TextView tvMark;
+    @BindView(R.id.tv_descript)
+    TextView tvDescript;
+    @BindView(R.id.rl_result)
+    RelativeLayout rlResult;
     // Number of Cameras in device.
     private int numberOfCameras;
 
     public static final String TAG = FaceDetectRGBActivity.class.getSimpleName();
 
     private Camera mCamera;
-    private int cameraId = 0;
+    private int cameraId = 1;
 
     // Let's keep track of the display rotation and orientation also:
     private int mDisplayRotation;
@@ -105,8 +129,8 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
     private final CameraErrorCallback mErrorCallback = new CameraErrorCallback();
 
 
-    private static final int MAX_FACE = 10;
     private boolean isThreadWorking = false;
+    private static final int MAX_FACE = 1;
     private Handler handler;
     private FaceDetectThread detectThread = null;
     private int prevSettingWidth;
@@ -118,33 +142,26 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
     private int Id = SpUtils.getInstace(this).getInt("Id", 0);
 
     private String BUNDLE_CAMERA_ID = "camera";
+    private HashMap<Integer, Integer> facesCount = new HashMap<>();//五帧存一个
 
+    String[] permissions = new String[]{Manifest.permission.CAMERA,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
-    //RecylerView face image
-    private HashMap<Integer, Integer> facesCount = new HashMap<>();
-
-    String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.CAMERA};
     List<String> mPermissionList = new ArrayList<>();
     private ApiFace apiFace;
-
-
+    private RotateAnimation rotateAnimation;
+    private ObjectAnimator anim;
+    private Handler uiHandler;
+    private final static int PERMISSION_CODE = 22;
+    private static final int RLRESULT_CHANGE = 2;
+    private int saveImageNum = 17;//保存图片计数器
+    private final int SAVEIMAGEMAX = 17;//单个faceID保存图片最大图片数
+    private int rotate;//图片旋转角度
+    private boolean isStart;
     //==============================================================================================
     // Activity Methods
     //==============================================================================================
-
-    /**
-     * Initializes the UI and initiates the creation of a face detector.
-     */
-    @Override
-    public void onCreate(Bundle icicle) {
-        super.onCreate(icicle);
-
-        setContentView(R.layout.activity_camera_viewer);
-        ButterKnife.bind(this);
-        getPermission();
-        initView(icicle);
-
-    }
 
     private void getPermission() {
 
@@ -165,7 +182,7 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
 //            delayEntryPage();
         } else {//请求权限方法
             String[] permissions = mPermissionList.toArray(new String[mPermissionList.size()]);//将List转为数组
-            ActivityCompat.requestPermissions(this, permissions, 1);
+            ActivityCompat.requestPermissions(this, permissions, PERMISSION_CODE);
         }
     }
 
@@ -173,18 +190,21 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
-            case 1:
+            case PERMISSION_CODE:
                 for (int i = 0; i < grantResults.length; i++) {
                     if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
                         //判断是否勾选禁止后不再询问
+
                         boolean showRequestPermission = ActivityCompat.shouldShowRequestPermissionRationale(FaceDetectRGBActivity.this, permissions[i]);
                         if (showRequestPermission) {//
-                            getPermission();//重新申请权限
+                            Toast.makeText(FaceDetectRGBActivity.this, "请开启对应权限，程序无法正常运行", Toast.LENGTH_SHORT).show();
                             return;
                         } else {
+//                            getPermission();
                         }
                     }
                 }
+                recreate();
                 break;
             default:
                 break;
@@ -195,8 +215,6 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
     private void initView(Bundle icicle) {
         apiFace = ApiFace.getInstance();
         EventBus.getDefault().register(this);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         // Now create the OverlayView:
         mFaceView = new FaceOverlayView(this);
@@ -213,13 +231,63 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
         }
 
 
-        getSupportActionBar().setDisplayShowTitleEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("颜值评分");
+        startAnimation();
+        if (icicle != null) {
+            cameraId = icicle.getInt(BUNDLE_CAMERA_ID, 1);
+        }
+        uiHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                switch (msg.what) {
+                    case RLRESULT_CHANGE:
+                        startRlDismiss();
+                        break;
+                }
+            }
+        };
+    }
 
-        if (icicle != null)
-            cameraId = icicle.getInt(BUNDLE_CAMERA_ID, 0);
+    private void startRlDismiss() {
+        AlphaAnimation alphaAnimation1 = new AlphaAnimation(1, 0);
+        alphaAnimation1.setDuration(300);
+        alphaAnimation1.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                rlResult.setVisibility(View.GONE);
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+            }
+        });
+        rlResult.startAnimation(alphaAnimation1);
+
+
+    }
+
+    private void startAnimation() {
+        rotateAnimation = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        LinearInterpolator lin = new LinearInterpolator();
+        rotateAnimation.setInterpolator(lin);
+        rotateAnimation.setDuration(5000);//设置动画持续周期
+        rotateAnimation.setRepeatCount(-1);//设置重复次数
+        rotateAnimation.setFillAfter(true);//动画执行完后是否停留在执行完的状态
+//        rotateAnimation.setStartOffset(10);//执行前的等待时间
+        ivWai.setAnimation(rotateAnimation);
+
+
+        anim = ObjectAnimator.ofFloat(ivNei, "rotation", 0f, -360f);
+        anim.setDuration(10000);
+        anim.setInterpolator(lin);
+        anim.setRepeatCount(-1);
+        anim.start();
+
     }
 
     /**
@@ -235,36 +303,59 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
         if (error.equals("0")) {
             FaceResult result = new Gson().fromJson(event.getResult(), FaceResult.class);
             for (int i = 0; i < result.getResult().getFace_list().size(); i++) {
-                faces[i].setBeauty(result.getResult().getFace_list().get(i).getBeauty());
-                faces[i].setAge(result.getResult().getFace_list().get(i).getAge());
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inPreferredConfig = Bitmap.Config.RGB_565;//必须设置为565，否则无法检测
-                Bitmap bitmap = BitmapFactory.decodeStream(
-                        new ByteArrayInputStream(event.getData()), null, options);
-                ivPicture.setImageBitmap(bitmap);
+                double beauty = result.getResult().getFace_list().get(i).getBeauty();
+                int age = result.getResult().getFace_list().get(i).getAge();
+                faces[i].setBeauty(beauty);
+                faces[i].setAge(age);
+                startShowResult((int) (Math.sqrt(beauty / 100 * 0.7 + 0.3) * 100),result.getResult().getFace_list().get(i));
 
-
-                String img_dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath() +
-                        File.separator + Id;
-                Log.e("path", img_dir);
-                File file = new File(img_dir);
-                if (!file.exists()) {
-                    //通过file的mkdirs()方法创建目录中包含却不存在的文件夹
-                    if(file.getParentFile().mkdirs()){
-                        Toast.makeText(this,"文件夹创建成功",Toast.LENGTH_SHORT).show();
-                    }else {
-                        Toast.makeText(this,"文件夹创失败",Toast.LENGTH_SHORT).show();
-
-                    }
-                }
-                String img_path = img_dir + File.separator + System.currentTimeMillis() + ".jpeg";
-                Log.e("path", img_path);
-                BitmapUtils.saveJPGE_After(FaceDetectRGBActivity.this, bitmap, img_path, 100);
             }
 
-        } else {
-//            tvResult.setText("未检测到人脸");
         }
+
+    }
+
+    private void startShowResult(int i,FaceResult.ResultBean.FaceListBean faceListBean) {
+        if (!isStart) {
+
+            tvMark.setText(i + "");
+            tvDescript.setText(Constants.getDescript(i,faceListBean));
+
+            ScaleAnimation scaleAnimation = new ScaleAnimation(0f, 1.1f, 0f, 1.1f,
+                    Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+            scaleAnimation.setDuration(500);
+            AlphaAnimation alphaAnimation = new AlphaAnimation(0f, 1f);
+            alphaAnimation.setDuration(400);
+
+            AnimationSet animationSet = new AnimationSet(false);
+            animationSet.addAnimation(scaleAnimation);
+            animationSet.addAnimation(alphaAnimation);
+            rlResult.startAnimation(animationSet);
+            animationSet.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                    rlResult.setVisibility(View.VISIBLE);
+                    isStart = true;
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    isStart = false;
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+            });
+
+
+            uiHandler.removeMessages(RLRESULT_CHANGE);
+            uiHandler.sendEmptyMessageDelayed(RLRESULT_CHANGE, 7000); // 5秒后执行runnable 的run方法
+
+        }
+
 
     }
 
@@ -280,82 +371,6 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
         SurfaceHolder holder = surfaceview.getHolder();
         holder.addCallback(this);
         holder.setFormat(ImageFormat.NV21);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        SpUtils.getInstace(this).saveInt("Id", Id);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_camera, menu);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                super.onBackPressed();
-                return true;
-
-            case R.id.switchCam:
-
-                if (numberOfCameras == 1) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                    builder.setTitle("Switch Camera").setMessage("Your device have one camera").setNeutralButton("Close", null);
-                    AlertDialog alert = builder.create();
-                    alert.show();
-                    return true;
-                }
-
-                cameraId = (cameraId + 1) % numberOfCameras;
-                recreate();
-
-                return true;
-
-
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-    /**
-     * Restarts the camera.
-     */
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        Log.i(TAG, "onResume");
-        startPreview();
-    }
-
-    /**
-     * Stops the camera.
-     */
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.i(TAG, "onPause");
-        if (mCamera != null) {
-            mCamera.stopPreview();
-        }
-    }
-
-    /**
-     * Releases the resources associated with the camera source, the associated detector, and the
-     * rest of the processing pipeline.
-     */
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        EventBus.getDefault().unregister(this);
     }
 
 
@@ -460,13 +475,10 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
          * The smaller image size -> detect faster, but distance to detect face shorter,
          * so calculate the size follow your purpose
          */
-        if (previewWidth / 4 > 360) {
-            prevSettingWidth = 360;
-            prevSettingHeight = 270;
-        } else if (previewWidth / 4 > 320) {
-            prevSettingWidth = 320;
-            prevSettingHeight = 240;
-        } else if (previewWidth / 4 > 240) {
+        if (previewWidth / 4 > 320) {
+            prevSettingWidth = 800;
+            prevSettingHeight = 480;
+        }  else if (previewWidth / 4 > 240) {
             prevSettingWidth = 240;
             prevSettingHeight = 160;
         } else {
@@ -542,6 +554,66 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
     double fps;
 
     /**
+     * Initializes the UI and initiates the creation of a face detector.
+     */
+    @Override
+    public void onCreate(Bundle icicle) {
+        super.onCreate(icicle);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);//取消标题栏
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);//全屏
+        setContentView(R.layout.activity_camera_viewer);
+        ButterKnife.bind(this);
+        if (Build.VERSION.SDK_INT >= 23) {
+            getPermission();
+
+        }
+        initView(icicle);
+
+    }
+
+    /**
+     * Restarts the camera.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Log.i(TAG, "onResume");
+        startPreview();
+    }
+
+    /**
+     * Stops the camera.
+     */
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, "onPause");
+        if (mCamera != null) {
+            mCamera.stopPreview();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        SpUtils.getInstace(this).saveInt("Id", Id);
+        anim.cancel();
+        rotateAnimation.cancel();
+    }
+
+    /**
+     * Releases the resources associated with the camera source, the associated detector, and the
+     * rest of the processing pipeline.
+     */
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
+
+    /**
      * Do face detect in thread
      */
     private class FaceDetectThread extends Thread {
@@ -593,7 +665,7 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
 
             Camera.CameraInfo info = new Camera.CameraInfo();
             Camera.getCameraInfo(cameraId, info);
-            int rotate = mDisplayOrientation;
+            rotate = mDisplayOrientation;
             if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT && mDisplayRotation % 180 == 0) {
                 if (rotate + 180 > 360) {
                     rotate = rotate - 180;
@@ -638,9 +710,9 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
                     int idFace = Id;
 
                     Rect rect = new Rect(
-                            (int) (mid.x - eyesDis * 1.20f),
-                            (int) (mid.y - eyesDis * 0.55f),
-                            (int) (mid.x + eyesDis * 1.20f),
+                            (int) (mid.x - eyesDis * 1.5f),
+                            (int) (mid.y - eyesDis * 1.85f),
+                            (int) (mid.x + eyesDis * 1.5f),
                             (int) (mid.y + eyesDis * 1.85f));
 
                     /**
@@ -654,7 +726,7 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
 
                             RectF rectCheck = new RectF(
                                     (midPre.x - eyesDisPre * 1.5f),
-                                    (midPre.y - eyesDisPre * 1.15f),
+                                    (midPre.y - eyesDisPre * 1.85f),
                                     (midPre.x + eyesDisPre * 1.5f),
                                     (midPre.y + eyesDisPre * 1.85f));
 
@@ -663,21 +735,35 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
                                 break;
                             }
                         }
-
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                        byte[] datas = baos.toByteArray();
                         if (idFace == Id) {
-                            String img_path = getExternalFilesDir(Environment.DIRECTORY_DCIM).getPath() +
-                                    File.separator + System.currentTimeMillis() + ".jpeg";
-
-//                            BitmapUtils.saveJPGE_After(FaceDetectRGBActivity.this, bitmap, img_path, 100);
-
-
-                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                            bmp.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-                            byte[] datas = baos.toByteArray();
-                            apiFace.getResult(datas);
-
                             Id++;
+                            saveImageNum = SAVEIMAGEMAX;
                         } else {
+                            //
+                            // 5帧保存一次图片
+                            // because of some first frame have low quality
+                            //
+                            if (facesCount.get(idFace) == null) {
+                                facesCount.put(idFace, 0);
+                            } else {
+                                int count = facesCount.get(idFace) + 1;
+                                if (count <= 2*SAVEIMAGEMAX) {
+                                    facesCount.put(idFace, count);
+                                    if (count == 2) {
+                                        apiFace.getResult(datas);
+                                    }
+                                    if (count % 2 == 0) {
+                                        --saveImageNum;
+                                        if (saveImageNum > 0) {
+                                            saveImage(bitmap);
+                                        }
+                                    }
+                                }
+
+                            }
 
                         }
 
@@ -685,55 +771,34 @@ public final class FaceDetectRGBActivity extends BaseActivity implements Surface
 
                         faces_previous[i].set(faces[i].getId(), faces[i].getMidEye(), faces[i].eyesDistance(), faces[i].getConfidence(), faces[i].getPose(), faces[i].getTime());
 
-                        //
-                        // if focus in a face 5 frame -> take picture face display in RecyclerView
-                        // because of some first frame have low quality
-                        //
-                        if (facesCount.get(idFace) == null) {
-                            facesCount.put(idFace, 0);
-                        } else {
-                            int count = facesCount.get(idFace) + 1;
-                            if (count <= 5)
-                                facesCount.put(idFace, count);
 
-                            //
-                            // Crop Face to display in RecylerView
-                            //
-                            if (count == 5) {
-                                faceCroped = ImageUtils.cropFace(faces[i], bitmap, rotate);
-                                if (faceCroped != null) {
-                                    handler.post(new Runnable() {
-                                        public void run() {
-//                                            imagePreviewAdapter.add(faceCroped);
-                                        }
-                                    });
-                                }
-                            }
-                        }
                     }
                 }
             }
+            isThreadWorking = false;
 
-            handler.post(new Runnable() {
-                public void run() {
-                    //send face to FaceView to draw rect
-                    mFaceView.setFaces(faces);
 
-                    //calculate FPS
-                    end = System.currentTimeMillis();
-                    counter++;
-                    double time = (double) (end - start) / 1000;
-                    if (time != 0)
-                        fps = counter / time;
+        }
+    }
 
-                    mFaceView.setFPS(fps);
-
-                    if (counter == (Integer.MAX_VALUE - 1000))
-                        counter = 0;
-
-                    isThreadWorking = false;
-                }
-            });
+    private void saveImage(Bitmap bitmap) {
+        String img_dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath() +
+                File.separator + Id;
+        Log.e("path", img_dir);
+        File file = new File(img_dir);
+        if (!file.exists()) {
+            //通过file的mkdirs()方法创建目录中包含却不存在的文件夹
+            if (file.mkdirs()) {
+                Log.e("tag", "文件夹创建成功");
+            } else {
+                Log.e("tag", "文件夹创建失败");
+            }
+        }
+        String img_path = img_dir + File.separator + +System.currentTimeMillis() + ".jpeg";
+        Log.e("path", img_path);
+        if (!(faces[0].getMidEye().x == 0 && faces[0].getMidEye().y == 0)) {
+            Bitmap faceCroped = ImageUtils.cropFace(faces[0], bitmap,rotate);
+            BitmapUtils.saveJPGE_After(FaceDetectRGBActivity.this, faceCroped, img_path, 70);
         }
     }
 

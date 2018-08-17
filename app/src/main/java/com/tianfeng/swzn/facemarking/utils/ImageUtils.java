@@ -11,11 +11,11 @@ import android.graphics.Rect;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import com.tianfeng.swzn.facemarking.bean.FaceBean;
 
 import java.io.IOException;
-
 
 
 /**
@@ -118,11 +118,8 @@ public class ImageUtils {
 
 
     public static Bitmap cropBitmap(Bitmap bitmap, Rect rect) {
-        int w = rect.right - rect.left;
-        int h = rect.bottom - rect.top;
-        Bitmap ret = Bitmap.createBitmap(w, h, bitmap.getConfig());
-        Canvas canvas = new Canvas(ret);
-        canvas.drawBitmap(bitmap, -rect.left, -rect.top, null);
+        Log.e("height", rect.bottom+"");
+        Bitmap ret = Bitmap.createBitmap(bitmap, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
         bitmap.recycle();
         return ret;
     }
@@ -134,12 +131,6 @@ public class ImageUtils {
         float eyesDis = face.eyesDistance();
         PointF mid = new PointF();
         face.getMidPoint(mid);
-
-        Rect rect = new Rect(
-                (int) (mid.x - eyesDis * 1.20f),
-                (int) (mid.y - eyesDis * 0.55f),
-                (int) (mid.x + eyesDis * 1.20f),
-                (int) (mid.y + eyesDis * 1.85f));
 
         Bitmap.Config config = Bitmap.Config.RGB_565;
         if (bitmap.getConfig() != null) config = bitmap.getConfig();
@@ -156,7 +147,41 @@ public class ImageUtils {
                 bmp = ImageUtils.rotate(bmp, 270);
                 break;
         }
+        /**
+         * 对边界进行判断
+         */
+        float sx, sy, ex, ey;
+        float  xScale = 1.50f;
+        float yScale = 2f;
+        if ((mid.x - eyesDis * xScale) > 0) {
+            sx = mid.x - eyesDis * xScale;
+        } else {
+            sx = 0;
+        }
+        if ((mid.y - eyesDis * yScale) > 0) {
+            sy = mid.y - eyesDis * yScale;
+        } else {
+            sy = 0;
+        }
+        if ((mid.x + eyesDis * xScale) <bmp.getWidth()) {
+            ex = mid.x + eyesDis * xScale;
+        } else {
+            ex = bmp.getWidth()-1;
+        }
+        if ((mid.y + eyesDis * yScale) < bmp.getHeight()) {
+            ey = mid.y + eyesDis * yScale;
+        } else {
+            ey = bmp.getHeight()-1;
+        }
 
+        Rect rect = new Rect(
+                (int) sx,
+                (int) sy,
+                (int) ex,
+                (int) ey);
+        if(rect.right-rect.left+rect.left>1900){
+            Log.e("tag1",rect.right+"");
+        }
         bmp = ImageUtils.cropBitmap(bmp, rect);
         return bmp;
     }
